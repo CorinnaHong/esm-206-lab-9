@@ -31,7 +31,8 @@ Use this template to follow along in Lab Week 9. Each code chunk you'll need is 
 
 # a. Load packages 'tidyverse' and 'stargazer':
 
-
+library(tidyverse)
+library(stargazer)
 
 ```
 
@@ -41,10 +42,12 @@ Use this template to follow along in Lab Week 9. Each code chunk you'll need is 
 
 # a. Read in data as 'homes':
 
+homes <- read_csv("slo_homes.csv")
 
 # b. Filter to only include cities "San Luis Obispo", "Santa Maria-Orcutt", "Atascadero", and "Arroyo Grande", and call this new subset 'homes_sub':
 
-
+homes_sub <- homes %>% 
+  filter(City == "Arroyo Grande" | City == "San Luis Obispo" | City == "Atascadero" | City == "Santa Maria-Orcutt")
 
 ```
 
@@ -86,7 +89,10 @@ by_sqft <- ggplot(homes_sub, aes(x = SqFt, y = Price)) +
 
 by_sqft
 
-# Observations here: Does relationship appear ~ linear? Anything else we can pick out re: trends, outliers, etc.? What is the general trend? Any outliers? Is there reason enough for us to omit it?
+# Observations here: Does relationship appear ~ linear? Yes 
+# Anything else we can pick out re: trends, outliers, etc.? 
+# What is the general trend? Any outliers? As sqft increase, price increases
+# Is there reason enough for us to omit it?
 
 ```
 
@@ -107,8 +113,19 @@ Use summary() to view the model output and statistics.
 
 # a. Saturated model: 
 
+homes_lm1<- lm(Price ~ City + Bedrooms + Bathrooms + SqFt + PricePerSqFt + Status, data = homes_sub) # Price as a fucntion of..., where to find data
+
+# This^ is a bad model. This is because price per sqft is calculated from the dependent variable Price, This can lead to biased overfitting of model results
+
+# Using the coefficients, the equation for this model is : Price = -626690 - 76863(SLO) - 9068.2(Atas) + 120160(SM-O) ... 
+
+# Does this model make sense? NO. It is telling me that as you add 1 bedroom, the price decreases.
+
+# Lets simplify: # of bedrooms, # of bathrooms, and sqft all tell us the same thing (how big the house is) choose just 1 to include
 
 # b. Model summary:
+
+summary(homes_lm1)
 
 ```
 
@@ -118,7 +135,15 @@ The next model: Exclude price per square foot, and bedrooms/bathrooms (since the
 
 # a. Updated model with variables City, SqFt, and Status:
 
+homes_lm2 <- lm(Price ~ City + SqFt + Status, data = homes_sub)
+
+# If everything else stays the same, A house in SLO will sell for $34525.4 more on average than Arroyo Grande (Always compared to reference varable)
+
 # b. Model summary:
+
+summary(homes_lm2)
+
+# p-values of coefficients answer "does this variable significantly predict the model outcome?"
 
 ```
 
