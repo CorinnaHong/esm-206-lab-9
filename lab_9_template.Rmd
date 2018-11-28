@@ -57,7 +57,7 @@ homes_sub <- homes %>%
 
 Example: if we want to compare distribution of housing prices by CITY (ignoring all other variables), we can do that:
 
-```{r by_city}
+```{r by_city, echo = FALSE}
 
 # a. Calculate mean price by city
 mean_by_city <- homes_sub %>% 
@@ -80,7 +80,7 @@ by_city
 
 Or another question: Overall relationship between home square footage and price, separated by City? 
 
-```{r by_sqft}
+```{r by_sqft, echo = FALSE}
 
 # a. Relationship between square footage and price
 by_sqft <- ggplot(homes_sub, aes(x = SqFt, y = Price)) +
@@ -109,7 +109,7 @@ Let's try this model a couple of different ways:
 
 Use summary() to view the model output and statistics.
 
-```{r saturated}
+```{r saturated, echo = FALSE}
 
 # a. Saturated model: 
 
@@ -131,7 +131,7 @@ summary(homes_lm1)
 
 The next model: Exclude price per square foot, and bedrooms/bathrooms (since these are largely explained by square footage...)
 
-```{r subset}
+```{r subset, echo = FALSE}
 
 # a. Updated model with variables City, SqFt, and Status:
 
@@ -149,23 +149,30 @@ summary(homes_lm2)
 
 Wait...but what if I wanted everything to be with respect to a Regular sale status? Then I need to change my factor levels. We've done this before, here we'll use a different function (fct_relevel) from *forcats* package in the tidyverse. 
 
-```{r fct_relevel}
+```{r fct_relevel, include = FALSE}
 
 # a. Set Status to class 'factor'
+
+homes_sub$Status <- factor(homes_sub$Status)
 
 
 # b. Check to ensure it's a factor now
 
+# Type class(homes_sub$City) in console
 
 # c. Check levels:
 
+levels(homes_sub$Status)
 
 # d. Reassign reference level of "Status" to "Regular":
 
+homes_sub$Status <- fct_relevel(homes_sub$Status, "Regular")
+levels(homes_sub$Status) # Check the levels the first is now "regular"
 
 # e. Now run the regression again - same equation, but now the reference level is different (Status = Regular): 
 
-
+homes_lm3 <- lm(Price ~ City + SqFt + Status, data = homes_sub)
+summary(homes_lm3)
 
 ```
 
@@ -178,9 +185,14 @@ Remember, since we're concerned about *residuals* (distance that actual observat
 
 Then we can evaluate model diagnostics using the plot() function:
 
-```{r diagnostics}
+```{r diagnostics, echo = FALSE}
 
 # a. Model diagnostics:
+
+par(mfrow = c(2,2))
+plot(homes_lm3)
+
+# Overall, heteroscedasticity is OK, residuals normality definitely looks good, and conceptually and mathematically my model is making sense
 
 ```
 
@@ -188,21 +200,26 @@ Then we can evaluate model diagnostics using the plot() function:
 
 The AIC is a quantitative metric for model "optimization" that balances complexity with model fit. The best models are the ones that fit the data as well as possible, as simply as possible. Recall: lower AIC value indicates a *more optimal* balance - **BUT STATISTICS IS NO SUBSTITUTE FOR JUDGEMENT!!!**
 
-```{r AIC}
+```{r AIC, echo = FALSE}
 
 # a. AIC values for each model
 
+sat_aic <- AIC(homes_lm1) # 10,699.25
+final_aic <- AIC(homes_lm3) # 11,148
+
 # Answer: which would you pick? 
+
+# If you only look at AIC, you would end up picking homes_lm1. We should still pick homes_lm3 because heteroscedasticity is OK, residuals normality definitely looks good, and conceptually and mathematically my model is making sense 
 
 ```
 
 ###7. Regression tables with *stargazer*
 
-```{r stargazer, results = 'asis'}
+```{r stargazer, echo = FALSE, results = 'asis'}
 
 # a. Prepare a nice regression table:
 
-
+lm_table <- stargazer(homes_lm1, homes_lm3, type = "html")
 
 # Note: If you want to work with this in Word, save to html, open, copy and paste into Word. 
 
@@ -224,7 +241,7 @@ Defaults are to exclude the prediction SE and mean confidence interval - if you 
 
 First, you need to create a new data frame of values that contain ALL NECESSARY VARIABLES **with the same variable names AND level strings**.
 
-```{r df_new}
+```{r df_new, echo = FALSE}
 
 # First, make a new data frame
 
@@ -250,13 +267,18 @@ df_new <- data.frame(City = rep(c("San Luis Obispo",
 
 Make predictions for the new data using predict():
 
-```{r predict}
+```{r predict, echo = FALSE}
 
 # a. Make predictions using the new data frame:
 
+price_predict <- predict(homes_lm3, 
+                         newdata = df_new, 
+                         se.fit = TRUE, 
+                         interval = "confidence")
+
 # b. Bind predictions to the data to make it actually useful:
 
-
+predict_df <- data.frame(df_new, price_predict)
 
 ```
 
@@ -266,6 +288,11 @@ Then visualize it!
 
 # Create a line graph with square footage on the x-axis, predicted price on y-axis, with color dependent on City and facet_wrapped by sale status (follow along):
 
+predict_graph <- ggplot(predict_df, aes(x = SqFt, y = fit.fit)) +
+  geom_line(aes(color = City)) +
+  facet_wrap(~Status)
+
+predict_graph
 
 ```
 
